@@ -12,9 +12,38 @@ class Output_SpokeOhms
     {
         $this->_item = $item;
         $this->_xml = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><ROOT/>');
-        if ("interviews" === $item->getItemType()->name) {
+        if ('interviews' === $item->getItemType()->name) {
             $this->generateXML();
         }
+    }
+
+    public function filePathExists()
+    {
+        $extension = '.zip';
+        if ('interviews' === $this->_item->getItemType()->name) {
+            $extension = '.xml';
+        }
+        $filePath = dirname(dirname(dirname(__FILE__)))
+                  . DIRECTORY_SEPARATOR
+                  . 'exports'
+                  . DIRECTORY_SEPARATOR
+                  . $this->getDcField('Identifier')
+                  . $extension;
+        return file_exists($filePath);
+    }
+
+    public function filePath()
+    {
+        if (!isset($this->_filePath)) {
+            $extension = '.zip';
+            if ('interviews' === $this->_item->getItemType()->name) {
+                $extension = '.xml';
+            }
+            $this->_filePath = 'exports/'
+                             . $this->getDcField('Identifier')
+                             . $extension;
+        }
+        return $this->_filePath;
     }
 
     public function generateXML()
@@ -83,4 +112,5 @@ class Output_SpokeOhms
 
     private $_item;
     private $_xml;
+    private $_filePath;
 }

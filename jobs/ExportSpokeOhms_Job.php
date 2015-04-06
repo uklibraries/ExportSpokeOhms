@@ -12,11 +12,20 @@ class ExportSpokeOhms_Job extends Omeka_Job_AbstractJob
     public function perform()
     {
         $item = get_record_by_id('Item', $this->_options['itemId']);
-        if ('interview' === $item->getItemType()->name) {
-            return;
-        }
         $elementId = NULL;
         $itemType = $item->getItemType()->name;
+        if ('interviews' === $itemType) {
+            $plugin_dir = dirname(dirname(__FILE__));
+            $export_dir = $plugin_dir . DIRECTORY_SEPARATOR . 'exports';
+            $title = metadata($item, array('Dublin Core', 'Title'), array('no_filter' => true));
+            $identifier = metadata($item, array('Dublin Core', 'Identifier'), array('no_filter' => true));
+            $interview_file = $export_dir . DIRECTORY_SEPARATOR . metadata($item, array('Dublin Core', 'Identifier'), array('no_filter' => true)) . '.xml';
+            $output = new Output_SpokeOhms($item);
+            file_put_contents($interview_file, $output->render());
+            chmod($interview_file, fileperms($export_dir) | 16);
+            return;
+        }
+
         $field = 'Interview Collection';
         if ('series' === $itemType) {
             $field = 'Interview Series';
