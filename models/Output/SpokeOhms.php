@@ -53,26 +53,28 @@ class Output_SpokeOhms
         $record->addAttribute('id', $this->getDcField('Identifier'));
         $record->addAttribute('dt', date('Y-m-d'));
         $record->addChild('version', '4');
-        $date = $record->addChild('date', $this->getField('Interview Standard Date'));
+        $date = $record->addChild('date', $this->getField('Interview Date'));
         $date->addAttribute('format', 'yyyy-mm-dd');
-        $date_nf = $record->addChild('date_nonpreferred_format', $this->getField('Interview Date'));
+        $date_nf = $record->addChild('date_nonpreferred_format'); #, $this->getField('Interview Date'));
         $record->addChild('cms_record_id', $this->getDcField('Identifier'));
-        $record->addChild('title', $this->getField('Interview Title'));
-        $record->addChild('accession', $this->getField('Interview Accession Number'));
+        $record->addChild('title', $this->getDcField('Title'));
+        $record->addChild('accession', $this->getDcField('Identifier'));
         $record->addChild('duration');
-        $record->addChild('collection_id', $this->getField('Interview Collection Identifier'));
-        $record->addChild('collection_name', $this->getField('Interview Collection'));
-        $record->addChild('series_id', $this->getField('Interview Series Identifier'));
-        $record->addChild('series_name', $this->getField('Interview Series'));
-        $record->addChild('repository', $this->getDcField('Publisher'));
+        $csMetadata = $this->getCollectionAndSeries();
+        $record->addChild('collection_id', $csMetadata['collection']['id']);
+        $record->addChild('collection_name', $csMetadata['collection']['label']);
+        $record->addChild('series_id', $csMetadata['series']['id']);
+        $record->addChild('series_name', $csMetadata['series']['label']);
+        # Hardcoded, but this is only needed for one repository
+        $record->addChild('repository', 'Louie B. Nunn Center for Oral History, University of Kentucky');
         $record->addChild('repository_url');
         foreach ($this->getFields('Interview LC Subject') as $subject) {
             $record->addChild('subject', $subject);
         }
-        foreach ($this->getFields('Interviewee') as $interviewee) {
+        foreach ($this->getNames($this->getFields('Interviewee Name')) as $interviewee) {
             $record->addChild('interviewee', $interviewee);
         }
-        foreach ($this->getFields('Interviewer') as $interviewer) {
+        foreach ($this->getNames($this->getFields('Interviewer Name')) as $interviewer) {
             $record->addChild('interviewer', $interviewer);
         }
         $record->addChild('file_name', $this->getField('Interview Cache File'));
@@ -81,8 +83,8 @@ class Output_SpokeOhms
         $record->addChild('description', $this->getField('Interview Summary'));
         $record->addChild('rel');
         $record->addChild('transcript');
-        $record->addChild('rights', $this->getField('Interview Rights Statement'));
-        $record->addChild('usage', $this->getField('Interview Usage Statement'));
+        $record->addChild('rights', $this->getField('Interview Rights'));
+        $record->addChild('usage', $this->getField('Interview Usage'));
     }
 
     public function getDcField($field)
@@ -108,6 +110,65 @@ class Output_SpokeOhms
     public function render()
     {
         return $this->_xml->asXML();
+    }
+
+    public function getNames($list) {
+        $people = array();
+        $keys = array('first', 'middle', 'last');
+        foreach ($list as $text) {
+            $person = json_decode(str_replace('&quot;', '"', $text), true);
+            $pieces = array();
+            foreach ($keys as $key) {
+                if (isset($person[$key]) and strlen($person[$key]) > 0) {
+                    $pieces[] = $person[$key];
+                }
+            }
+            $people[] = implode(' ', $pieces);
+        }
+        return $people;
+    }
+
+    public function getCollectionAndSeries()
+    {
+        $metadata = array(
+            'series' => array(),
+            'collection' => array(),
+        );
+        $subjects = get_db()->getTable('ItemRelationsRelation')->findBySubjectItemId($this->_item->id);
+        foreach ($subjects as $subject) {
+            if ($subject->getPropertyText() !== "Is Part Of") {
+                continue;
+            }
+            if (!($subitem = get_record_by_id('item', $subject->object_item_id))) {
+                continue;
+            }
+            $label = metadata($subitem, array('Dublin Core', 'Title'), array('no_filter' => true));
+            $metadata['series'] = array(
+                'id' => metadata($subitem, array('Dublin Core', 'Identifier'), array('no_filter' => true)),
+                'label' => $label,
+                'item_id' => $subject->object_item_id,
+            );
+            break;
+        }
+
+        $subjects = get_db()->getTable('ItemRelationsRelation')->findBySubjectItemId($metadata['series']['item_id']);
+        foreach ($subjects as $subject) {
+            if ($subject->getPropertyText() !== "Is Part Of") {
+                continue;
+            }
+            if (!($subitem = get_record_by_id('item', $subject->object_item_id))) {
+                continue;
+            }
+            $label = metadata($subitem, array('Dublin Core', 'Title'), array('no_filter' => true));
+            $metadata['collection'] = array(
+                'id' => metadata($subitem, array('Dublin Core', 'Identifier'), array('no_filter' => true)),
+                'label' => $label,
+                'item_id' => $subject->object_item_id,
+            );
+            break;
+        }
+
+        return $metadata;
     }
 
     private $_item;
