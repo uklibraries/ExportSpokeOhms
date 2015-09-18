@@ -12,9 +12,82 @@ class Output_SpokeOhms
     {
         $this->_item = $item;
         $this->_xml = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><ROOT/>');
+        $this->_itemType = $item->getItemType()->name;
         if ('interviews' === $item->getItemType()->name) {
             $this->generateXML();
         }
+    }
+
+    public function parents()
+    {
+        $subjects = get_db()->getTable('ItemRelationsRelation')->findBySubjectItemId($this->_item->id);
+        $results = array();
+        foreach ($subjects as $subject) {
+            if ($subject->getPropertyText() !== "Is Part Of") {
+                continue;
+            }
+            if (!($superItem = get_record_by_id('item', $subject->object_item_id))) {
+                continue;
+            }
+            $results[] = $superItem;
+        }
+        return $results;
+    }
+
+    public function exportable()
+    {
+        $exportable = false;
+        switch($this->_itemType) {
+        case "collections":
+            $raw_suppression = metadata($this->_item, array('Item Type Metadata', 'Collection Suppressed'), array('no_filter' => true));
+            $suppression = json_decode($raw_suppression, true);
+            $exportable = $suppression['description'] ? false : true;
+            break;
+        case "series":
+            $raw_suppression = metadata($this->_item, array('Item Type Metadata', 'Series Suppressed'), array('no_filter' => true));
+            $suppression = json_decode($raw_suppression, true);
+            if ($suppression['description']) {
+                $exportable = false;
+            }
+            else {
+                $exportable = true;
+                foreach ($this->parents() as $parent) {
+                    $parent_raw_suppression = metadata($parent, array('Item Type Metadata', 'Collection Suppressed'), array('no_filter' => true));
+                    $parent_suppression = json_decode($parent_raw_suppression, true);
+                    if ($parent_suppression['recursive']) {
+                        $exportable = false;
+                    }
+                }
+            }
+            break;
+        case "interviews":
+            $suppression = metadata($this->_item, array('Item Type Metadata', 'Interview Suppressed'), array('no_filter' => true));
+            if (strlen($suppression) > 0) {
+                $exportable = false;
+            }
+            else {
+                $exportable = true;
+                foreach ($this->parents() as $parent) {
+                    $parent_raw_suppression = metadata($parent, array('Item Type Metadata', 'Series Suppressed'), array('no_filter' => true));
+                    $parent_suppression = json_decode($parent_raw_suppression, true);
+                    if ($parent_suppression['recursive']) {
+                        $exportable = false;
+                    }
+                    else {
+                        $parentOutput = new Output_SpokeOhms($parent);
+                        foreach ($parentOutput->parents() as $grandparent) {
+                            $grandparent_raw_suppression = metadata($grandparent, array('Item Type Metadata', 'Collection Suppressed'), array('no_filter' => true));
+                            $grandparent_suppression = json_decode($grandparent_raw_suppression, true);
+                            if ($grandparent_suppression['recursive']) {
+                                $exportable = false;
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        return $exportable;
     }
 
     public function filePathExists()
