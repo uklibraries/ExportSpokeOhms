@@ -8,6 +8,7 @@
  */
 
 require_once 'jobs' . DIRECTORY_SEPARATOR . 'ExportSpokeOhms_Job.php';
+require_once 'models' . DIRECTORY_SEPARATOR . 'Output' . DIRECTORY_SEPARATOR . 'SpokeOhms.php';
 
 class ExportSpokeOhmsPlugin extends Omeka_Plugin_AbstractPlugin
 {
@@ -23,10 +24,14 @@ class ExportSpokeOhmsPlugin extends Omeka_Plugin_AbstractPlugin
 
     public function hookAdminItemsShowSidebar($args)
     {
-        echo get_view()->partial(
-            'export-ohms-panel.php',
-            array()
-        );
+        $item = get_record_by_id('Item', $args['item']['id']);
+        $output = new Output_SpokeJson($item);
+        if ($output->exportable()) {
+            echo get_view()->partial(
+                'export-ohms-panel.php',
+                array()
+            );
+        }
     }
 
     public function hookDefineRoutes($args)
