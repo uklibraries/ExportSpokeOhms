@@ -7,8 +7,11 @@
  * @package Omeka\Plugins\ExportSpokeOhms
  */
 
-require_once 'jobs' . DIRECTORY_SEPARATOR . 'ExportSpokeOhms_Job.php';
-require_once 'models' . DIRECTORY_SEPARATOR . 'Output' . DIRECTORY_SEPARATOR . 'SpokeOhms.php';
+define('DS', DIRECTORY_SEPARATOR);
+require_once "jobs" . DS . "ExportSpokeOhms_Job.php";
+require_once "models" . DS . "Output" . DIRECTORY_SEPARATOR . "SpokeOhms.php";
+$pluginDir = dirname(dirname(__FILE__));
+require_once $pluginDir . DS . "RecursiveSuppression" . DS . "models" . DS . "SuppressionChecker.php";
 
 class ExportSpokeOhmsPlugin extends Omeka_Plugin_AbstractPlugin
 {
@@ -25,8 +28,8 @@ class ExportSpokeOhmsPlugin extends Omeka_Plugin_AbstractPlugin
     public function hookAdminItemsShowSidebar($args)
     {
         $item = get_record_by_id('Item', $args['item']['id']);
-        $output = new Output_SpokeJson($item);
-        if ($output->exportable()) {
+        $checker = new SuppressionChecker($item);
+        if ($checker->exportable()) {
             echo get_view()->partial(
                 'export-ohms-panel.php',
                 array()

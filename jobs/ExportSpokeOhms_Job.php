@@ -7,6 +7,10 @@
  * @package Omeka\Plugins\ExportSpokeOhms
  */
 
+define('DS', DIRECTORY_SEPARATOR);
+$pluginDir = dirname(dirname(dirname(__FILE__)));
+require_once $pluginDir . DS . "RecursiveSuppression" . DS . "models" . DS . "SuppressionChecker.php";
+
 class ExportSpokeOhms_Job extends Omeka_Job_AbstractJob
 {
     public function perform()
@@ -14,11 +18,13 @@ class ExportSpokeOhms_Job extends Omeka_Job_AbstractJob
         $item = get_record_by_id('Item', $this->_options['itemId']);
         $elementId = NULL;
         $itemType = $item->getItemType()->name;
-        $output = new Output_SpokeOhms($item);
+        $checker = new SuppressionChecker($item);
 
-        if (!$output->exportable()) {
+        if (!$checker->exportable()) {
             return;
         }
+
+        $output = new Output_SpokeOhms($item);
 
         $plugin_dir = dirname(dirname(__FILE__));
         $export_dir = $plugin_dir . DIRECTORY_SEPARATOR . 'exports';
@@ -28,8 +34,9 @@ class ExportSpokeOhms_Job extends Omeka_Job_AbstractJob
             $title = metadata($item, array('Dublin Core', 'Title'), array('no_filter' => true));
             $identifier = metadata($item, array('Dublin Core', 'Identifier'), array('no_filter' => true));
             $interview_file = $export_dir . DIRECTORY_SEPARATOR . metadata($item, array('Dublin Core', 'Identifier'), array('no_filter' => true)) . '.xml';
-            $output = new Output_SpokeOhms($item);
-            if ($output->exportable()) {
+            $ichecker = new SuppressionChecker($item);
+            if ($ichecker->exportable()) {
+                $output = new Output_SpokeOhms($item);
                 file_put_contents($interview_file, $output->render());
                 chmod($interview_file, fileperms($export_dir) | 16);
             }
@@ -57,8 +64,9 @@ class ExportSpokeOhms_Job extends Omeka_Job_AbstractJob
                     continue;
                 }
                 $interview_file = metadata($subitem, array('Dublin Core', 'Identifier'), array('no_filter' => true)) . '.xml';
-                $output = new Output_SpokeOhms($subitem);
-                if ($output->exportable()) {
+                $ichecker = new SuppressionChecker($subitem);
+                if ($ichecker->exportable()) {
+                    $output = new Output_SpokeOhms($subitem);
                     $zip->addFromString($interview_file, $output->render());
                 }
             }
@@ -98,8 +106,9 @@ class ExportSpokeOhms_Job extends Omeka_Job_AbstractJob
                         continue;
                     }
                     $interview_file = metadata($interview, array('Dublin Core', 'Identifier'), array('no_filter' => true)) . '.xml';
-                    $output = new Output_SpokeOhms($interview);
-                    if ($output->exportable()) {
+                    $ichecker = new SuppressionChecker($interview);
+                    if ($ichecker->exportable()) {
+                        $output = new Output_SpokeOhms($interview);
                         $zip->addFromString($interview_file, $output->render());
                     }
                 }
