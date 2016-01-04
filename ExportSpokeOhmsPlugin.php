@@ -30,9 +30,11 @@ class ExportSpokeOhmsPlugin extends Omeka_Plugin_AbstractPlugin
         $item = get_record_by_id('Item', $args['item']['id']);
         $checker = new SuppressionChecker($item);
         if ($checker->exportable()) {
+            $subitemCount = $this->getSubitemCount($item);
+            $exportable = $subitemCount <= 200;
             echo get_view()->partial(
                 'export-ohms-panel.php',
-                array()
+                array('exportable' => $exportable)
             );
         }
     }
@@ -70,5 +72,21 @@ class ExportSpokeOhmsPlugin extends Omeka_Plugin_AbstractPlugin
             $contexts['show'][] = 'spoke-ohms';
         }
         return $contexts;
+    }
+
+    private function getSubitemCount($item) {
+        $count = 1;
+        $objects = get_db()->getTable('ItemRelationsRelation')->findByObjectItemId($item->id);
+        $objectRelations = array();
+        foreach ($objects as $object) {
+            if ($object->getPropertyText() !== "Is Part Of") {
+                continue;
+            }
+            if (!($subitem = get_record_by_id('item', $object->subject_item_id))) {
+                continue;
+            }
+            $count += $this->getSubitemCount($subitem);
+        }
+        return $count;
     }
 }

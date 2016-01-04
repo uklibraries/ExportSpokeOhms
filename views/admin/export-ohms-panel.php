@@ -1,3 +1,4 @@
+<?php if ($exportable): ?>
 <div class="panel">
   <h4>Export OHMS</h4>
   <div>
@@ -15,3 +16,4 @@ endif;
 ?>
   </div>
 </div>
+<?php endif; ?>
