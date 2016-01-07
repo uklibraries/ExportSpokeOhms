@@ -30,8 +30,12 @@ class ExportSpokeOhmsPlugin extends Omeka_Plugin_AbstractPlugin
         $item = get_record_by_id('Item', $args['item']['id']);
         $checker = new SuppressionChecker($item);
         if ($checker->exportable()) {
-            $subitemCount = $this->getSubitemCount($item);
-            $exportable = $subitemCount <= 200;
+            $exportable = true;
+            # TODO: Make this configurable
+            if (false) {
+                $subitemCount = $this->getSubitemCount($item);
+                $exportable = $subitemCount <= 200;
+            }
             echo get_view()->partial(
                 'export-ohms-panel.php',
                 array('exportable' => $exportable)
