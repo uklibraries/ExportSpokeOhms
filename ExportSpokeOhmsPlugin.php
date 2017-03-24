@@ -7,11 +7,10 @@
  * @package Omeka\Plugins\ExportSpokeOhms
  */
 
-define('DS', DIRECTORY_SEPARATOR);
-require_once "jobs" . DS . "ExportSpokeOhms_Job.php";
-require_once "models" . DS . "Output" . DIRECTORY_SEPARATOR . "SpokeOhms.php";
+require_once "jobs" . DIRECTORY_SEPARATOR . "ExportSpokeOhms_Job.php";
+require_once "models" . DIRECTORY_SEPARATOR . "Output" . DIRECTORY_SEPARATOR . "SpokeOhms.php";
 $pluginDir = dirname(dirname(__FILE__));
-require_once $pluginDir . DS . "RecursiveSuppression" . DS . "models" . DS . "SuppressionChecker.php";
+require_once $pluginDir . DIRECTORY_SEPARATOR . "RecursiveSuppression" . DIRECTORY_SEPARATOR . "models" . DIRECTORY_SEPARATOR . "SuppressionChecker.php";
 
 class ExportSpokeOhmsPlugin extends Omeka_Plugin_AbstractPlugin
 {

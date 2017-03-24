@@ -7,9 +7,8 @@
  * @package Omeka\Plugins\ExportSpokeOhms
  */
 
-define('DS', DIRECTORY_SEPARATOR);
 $pluginDir = dirname(dirname(dirname(__FILE__)));
-require_once $pluginDir . DS . "RecursiveSuppression" . DS . "models" . DS . "SuppressionChecker.php";
+require_once $pluginDir . DIRECTORY_SEPARATOR . "RecursiveSuppression" . DIRECTORY_SEPARATOR . "models" . DIRECTORY_SEPARATOR . "SuppressionChecker.php";
 
 class ExportSpokeOhms_Job extends Omeka_Job_AbstractJob
 {
